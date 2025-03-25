@@ -39,7 +39,7 @@ conf_data.set('version', meson.project_version())
 
 git = find_program('git', required : false)
 if git.found()
-  git_version = run_command('git', 'describe', '--long', '--tags')
+  git_version = run_command(git, 'describe', '--long', '--tags')
   if git_version.returncode() == 0
     conf_data.set('version', git_version.stdout().strip())
   endif
