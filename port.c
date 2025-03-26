@@ -30,6 +30,7 @@
 #include "structs.h"
 #include "port_hash.h"
 #include "log.h"
+#include "format.h"
 #include "port.h"
 
 extern bool g_disable_port_uniqueness;
@@ -100,6 +101,7 @@ a2j_port_free(
   free(port);
 }
 
+extern format_t g_a2j_jack_port_format;
 void
 a2j_port_fill_name(
   struct a2j_port * port_ptr,
@@ -111,7 +113,33 @@ a2j_port_fill_name(
   char *c;
   int ret;
 
-  if (make_unique)
+  if (g_a2j_jack_port_format)
+  {
+	char *name;
+	// 4 > 8 * log(2) / log(10), possible -, \0
+	char client_id[4 * sizeof(int) + 2];
+	char port_id[4 * sizeof(int) + 2];
+	snprintf(client_id, sizeof(client_id), "%d",
+			 snd_seq_client_info_get_client(client_info_ptr));
+	snprintf(port_id, sizeof(port_id), "%d",
+			 snd_seq_port_info_get_port(port_info_ptr));
+	const char * replacements[] = {
+	  snd_seq_client_info_get_name(client_info_ptr),
+	  client_id,
+	  snd_seq_port_info_get_name(port_info_ptr),
+	  port_id,
+	  type == A2J_PORT_CAPTURE ? "capture": "playback"
+	};
+	print_format(g_a2j_jack_port_format,
+				 replacements, sizeof(replacements) / sizeof(replacements[0]), &name);
+	if (name) {
+	  ret = stpncpy(port_ptr->name,
+					name,
+					g_max_jack_port_name_size) - port_ptr->name;
+	  free(name);
+	}
+  }
+  else if (make_unique)
   {
     ret = snprintf(
       port_ptr->name,

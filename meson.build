@@ -31,7 +31,9 @@ src_a2jmidid = [
         'paths.c',
         #'conf.c',
         'jack.c',
-        'list.c']
+        'list.c',
+        'format.c',
+]
 
 # config.h input
 conf_data = configuration_data()

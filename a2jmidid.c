@@ -53,6 +53,7 @@
 #include "jack.h"
 #include "sigsegv.h"
 #include "dbus_iface_control.h"
+#include "format.h"
 
 #define MAIN_LOOP_SLEEP_INTERVAL 50 // in milliseconds
 
@@ -66,6 +67,7 @@ bool g_disable_port_uniqueness = false;
 
 bool g_a2j_export_hw_ports = false;
 char * g_a2j_jack_server_name = "default";
+static char * g_a2j_jack_port_format_str = "%client_name% [%client_id%] (%port_type%): [%port_id%] %port_name%";
 
 static
 void
@@ -465,14 +467,20 @@ main(
 
   if (!dbus)
   {
-    struct option long_opts[] = { { "export-hw", 0, 0, 'e' }, { 0, 0, 0, 0 } };
+    struct option long_opts[] = { { "export-hw", 0, 0, 'e' },
+                                  { "port-format", required_argument, 0, 'p' },
+                                  { 0, 0, 0, 0 } };
 
     int option_index = 0;
     int c;
-    while ((c = getopt_long(argc, argv, "j:eu", long_opts, &option_index)) != -1)
+    while ((c = getopt_long(argc, argv, "p:j:eu", long_opts, &option_index)) != -1)
     {
       switch (c)
       {
+      case 'p':
+        g_a2j_jack_port_format_str = strdup(optarg);
+        a2j_info("Using port format: \"%s\"", optarg);
+        break;
       case 'j':
         g_a2j_jack_server_name = strdup(optarg);
         break;
@@ -492,6 +500,11 @@ main(
   {
     //a2j_conf_load();
   }
+
+  // FIXME temporary global variable
+  g_a2j_jack_port_format = parse_format(g_a2j_jack_port_format_str,
+                                        g_a2j_jack_port_format_keys,
+                                        g_a2j_jack_port_format_keys_cnt);
 
   if (dbus)
   {
